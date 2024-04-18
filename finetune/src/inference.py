@@ -20,7 +20,7 @@ tokenizer = get_chat_template(
 FastLanguageModel.for_inference(model) # Enable native 2x faster inference
 
 
-def infer(messages):
+def infer(messages, model, tokenizer):
 # messages = [
 #     {"role": "user", "content": "Hi"},
 # ]
