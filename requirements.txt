@@ -1,0 +1,8 @@
+PyPDF2
+openai
+pinecone-client
+tqdm
+torch
+streamlit
+pandas
+numpy
