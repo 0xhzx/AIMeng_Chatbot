@@ -1,19 +1,12 @@
 from dotenv import load_dotenv
-
 import PyPDF2
-import sqlite3
-
 import numpy as np
-import pickle
-
 from openai import OpenAI
 import os
-
-import streamlit as st
-
 from pinecone import Pinecone, ServerlessSpec
-
 from tqdm import tqdm
+from bs4 import BeautifulSoup
+import requests
 
 
 def extract_text_from_pdf(pdf_file):
@@ -56,8 +49,22 @@ def create_database():
     return index
 
 def upload_to_database(index, embeddings):
-    # embedding_keys = list(embeddings.keys())
-    
+    """
+    Upload all embeddings to Pinecone
+
+    Args:
+        pc_index (Pinecone.Index): Pinecone index
+        embeddings (dict): Dictionary of embeddings
+            The embedding dict should be of this format:
+                {0: 
+                    {
+                    "embedding": [0.1, 0.2, ..., 0.9],
+                    "text": "......"
+                    },
+                1: 
+                    {...},
+                }
+    """
     batch_size = 50
     embedding_keys = list(embeddings.keys())
     list_embedding_values = list(embeddings.values())
@@ -72,18 +79,41 @@ def upload_to_database(index, embeddings):
         to_upsert_list = list(zip(ids_batch, vectors_batch, meta_batch))
         index.upsert(vectors=to_upsert_list)
         print(f"Uploaded batch {i+1} to {i+batch_size} to Pinecone")
-    
-    # for i in tqdm(embedding_keys):
-    #     index.upsert([{"id": str(i), "values": embeddings[i]}])
-        
 
-def main():
-    load_dotenv(override=True)
-    
-    openai_key = os.getenv("OPENAI_KEY")
-    
-    client = OpenAI(api_key=openai_key)
-    
+
+def make_meta_embeddings_html(client):
+    url_list = [
+        "https://ai.meng.duke.edu/",
+        "https://pratt.duke.edu/life/resources/grad/",
+        "https://sites.duke.edu/prattgsps/engineering-masters-programs-student-advisory-board/",
+        
+        
+    ]
+    meta_chunks = []; meta_embedding = []
+    meta_embeddings = {}
+    def _extract_text_from(url):
+        html = requests.get(url).text
+        soup = BeautifulSoup(html, features="html.parser")
+        text = soup.get_text()
+
+        lines = (line.strip() for line in text.splitlines())
+        return '\n'.join(line for line in lines if line)
+
+    for url in url_list:
+        text = _extract_text_from(url)
+        chunks = chunking(text)
+        embeddings = make_embeddings(client, chunks)
+        
+        meta_chunks = meta_chunks + chunks
+        meta_embedding = meta_embedding + embeddings
+        
+    for idx in range(len(meta_chunks)):
+        meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
+                                "embedding": meta_embedding[idx]}
+    return meta_embeddings
+
+        
+def make_meta_embeddings_pdf(client):
     data_path = "../data/"
     meta_chunks = []; meta_embedding = []
     meta_embeddings = {}
@@ -98,14 +128,53 @@ def main():
             
             meta_chunks = meta_chunks + chunks
             meta_embedding = meta_embedding + embeddings
-    
-    # print(len(meta_chunks), len(meta_embedding))
-    
+        
     for idx in range(len(meta_chunks)):
         meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
                                 "embedding": meta_embedding[idx]}
+    return meta_embeddings
+
+def search_similar_text(index, query_embedding, top_k=5):    
+    context = ""
+    
+    result = index.query(
+        vector=query_embedding,
+        top_k=top_k,
+        include_values=True,
+        include_metadata=True
+        )
+    # get the top 5 similar texts
+    for idx in range(top_k):
+        context = context + result['matches'][idx]['metadata']['text']
+        
+    return context
+
+
+def main():
+    load_dotenv(override=True)
+    
+    openai_key = os.getenv("OPENAI_KEY")
+    
+    client = OpenAI(api_key=openai_key)
+    
     index = create_database()
-    upload_to_database(index, meta_embeddings)
+    
+    # meta_embeddings_pdf = make_meta_embeddings_pdf(client)
+    meta_embeddings_html = make_meta_embeddings_html(client)
+    
+    # print(len(meta_embeddings_html))
+    # print(len(meta_embeddings_pdf))
+    
+    # upload_to_database(index, meta_embeddings_pdf)
+    upload_to_database(index, meta_embeddings_html)
+    
+    # query = "what course should i choose in the first semester of the AI meng program at Duke?"
+    
+    # query_embedding = make_embeddings(client, [query])[0]
+    # context = search_similar_text(index, query_embedding)
+    
+    
+    
     pass
 
 
