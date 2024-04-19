@@ -28,5 +28,5 @@ After you fork and git clone the project, You should do the following steps:
 ## Run the chatbot
 To run the chatbot, you can run the following command:
 ```bash
-streamlit run src/web/web_demo.py --server.port 8000 --browser.gatherUsageStats false
+python -m streamlit run src/web/web_demo.py --server.port 8000 --server.address 0.0.0.0 --browser.gatherUsageStats false
 ```
