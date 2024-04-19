@@ -1,18 +1,12 @@
 from dotenv import load_dotenv
-
 import PyPDF2
 import sqlite3
-
 import numpy as np
 import pickle
-
 from openai import OpenAI
 import os
-
 import streamlit as st
-
 from pinecone import Pinecone, ServerlessSpec
-
 from tqdm import tqdm
 
 
@@ -72,10 +66,7 @@ def upload_to_database(index, embeddings):
         to_upsert_list = list(zip(ids_batch, vectors_batch, meta_batch))
         index.upsert(vectors=to_upsert_list)
         print(f"Uploaded batch {i+1} to {i+batch_size} to Pinecone")
-    
-    # for i in tqdm(embedding_keys):
-    #     index.upsert([{"id": str(i), "values": embeddings[i]}])
-        
+
 
 def main():
     load_dotenv(override=True)
@@ -98,9 +89,7 @@ def main():
             
             meta_chunks = meta_chunks + chunks
             meta_embedding = meta_embedding + embeddings
-    
-    # print(len(meta_chunks), len(meta_embedding))
-    
+
     for idx in range(len(meta_chunks)):
         meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
                                 "embedding": meta_embedding[idx]}
