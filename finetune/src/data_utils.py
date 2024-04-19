@@ -1,6 +1,5 @@
 # Load model directly
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
+
 from datasets import Dataset
 from trl import DataCollatorForCompletionOnlyLM
 import datasets

@@ -80,7 +80,6 @@ def upload_to_database(index, embeddings):
         index.upsert(vectors=to_upsert_list)
         print(f"Uploaded batch {i+1} to {i+batch_size} to Pinecone")
 
-
 # def make_meta_embeddings_html(client):
 #     url_list = [
 #         "https://ai.meng.duke.edu/",
@@ -132,7 +131,7 @@ def make_meta_embeddings_pdf(client):
             
             meta_chunks = meta_chunks + chunks
             meta_embedding = meta_embedding + embeddings
-        
+
     for idx in range(len(meta_chunks)):
         meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
                                 "embedding": meta_embedding[idx]}
