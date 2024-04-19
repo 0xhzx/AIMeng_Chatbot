@@ -1,6 +1,6 @@
 import torch
 import wandb, os
-from train import finetune
+from train import finetune, rlhf_dpo
 import argparse
 from pathlib import Path
 from unsloth import FastLanguageModel
@@ -9,7 +9,6 @@ import torch
 def main():
     
     parser = argparse.ArgumentParser()
-
     parser.add_argument("--max_steps", type=int, default=6000)
     parser.add_argument("--logging", type=int, default=200)
     parser.add_argument("--max_seq_length", type=int, default=2048)
@@ -18,14 +17,21 @@ def main():
     parser.add_argument("--lr", type=float, default=2.5e-5)#2.5e-5
     parser.add_argument("--output_dir", type=str, default="/home/featurize/work/AIPI590-chatbot/outputs")
     parser.add_argument("--data_root_dir", type=str, default="/home/featurize/work/AIPI590-chatbot/data")
+    parser.add_argument("--stage", type=str, default="rlhf")
     args = parser.parse_args()
 
+    if args.stage == "finetune":
+        data_dir = Path(args.data_root_dir) / "train_chat.pkl"
+    elif args.stage == "rlhf":
+        data_dir = Path(args.data_root_dir) / "rlhf.pkl"
+    elif args.stage == "evaluation":
+        data_dir = Path(args.data_root_dir) / "test_chat.pkl"
     
-    data_dir = Path(args.data_root_dir) / "train_chat.pkl"
+    
+    
     model_name = "mistralai/Mistral-7B-v0.1"
     
     # model quantization
-
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name = model_name, 
         max_seq_length = args.max_seq_length,
@@ -48,9 +54,12 @@ def main():
         loftq_config = None, # And LoftQ
     )
     
-
-    finetune(model, tokenizer, data_dir, args)
-    
+    if args.stage == "finetune":
+        finetune(model, tokenizer, data_dir, args)
+    elif args.stage == "rlhf":
+        rlhf_dpo(model, tokenizer, data_dir, args)
+    elif args.stage == "evaluation":
+        pass
 
     
 if __name__ == "__main__":

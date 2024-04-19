@@ -20,7 +20,7 @@ tokenizer = get_chat_template(
 FastLanguageModel.for_inference(model) # Enable native 2x faster inference
 
 
-def infer(messages, model, tokenizer):
+def infer(messages):
 # messages = [
 #     {"role": "user", "content": "Hi"},
 # ]
@@ -31,10 +31,12 @@ def infer(messages, model, tokenizer):
         return_tensors = "pt",
     ).to("cuda")
     
-    outputs = model.generate(input_ids = inputs, max_new_tokens = 500, use_cache = True, pad_token_id=tokenizer.eos_token_id)
-    responses = tokenizer.batch_decode(outputs)
+    # outputs = model.generate(input_ids = inputs, max_new_tokens = 500, use_cache = True, pad_token_id=tokenizer.eos_token_id)
+    # responses = tokenizer.batch_decode(outputs)
+    outputs = model.generate(input_ids = inputs,use_cache = True, pad_token_id=tokenizer.eos_token_id, max_new_tokens=1000, do_sample=True)
+    responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     
-    return responses
+    return responses[0]
 
 
 
