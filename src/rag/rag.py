@@ -80,39 +80,37 @@ def upload_to_database(index, embeddings):
         index.upsert(vectors=to_upsert_list)
         print(f"Uploaded batch {i+1} to {i+batch_size} to Pinecone")
 
-# def make_meta_embeddings_html(client):
-#     url_list = [
-#         "https://ai.meng.duke.edu/",
-#         "https://pratt.duke.edu/life/resources/grad/",
-#         "https://sites.duke.edu/prattgsps/engineering-masters-programs-student-advisory-board/",
-#         "https://pratt.duke.edu/about/",
-#         "https://registrar.bulletins.duke.edu/about/mission-and-history",
-        
-        
-        
-#     ]
-#     meta_chunks = []; meta_embedding = []
-#     meta_embeddings = {}
-#     def _extract_text_from(url):
-#         html = requests.get(url).text
-#         soup = BeautifulSoup(html, features="html.parser")
-#         text = soup.get_text()
 
-#         lines = (line.strip() for line in text.splitlines())
-#         return '\n'.join(line for line in lines if line)
+def make_meta_embeddings_html(client):
+    url_list = [
+        "https://ai.meng.duke.edu/",
+        "https://pratt.duke.edu/life/resources/grad/",
+        "https://sites.duke.edu/prattgsps/engineering-masters-programs-student-advisory-board/",
+        
+        
+    ]
+    meta_chunks = []; meta_embedding = []
+    meta_embeddings = {}
+    def _extract_text_from(url):
+        html = requests.get(url).text
+        soup = BeautifulSoup(html, features="html.parser")
+        text = soup.get_text()
 
-#     for url in url_list:
-#         text = _extract_text_from(url)
-#         chunks = chunking(text)
-#         embeddings = make_embeddings(client, chunks)
+        lines = (line.strip() for line in text.splitlines())
+        return '\n'.join(line for line in lines if line)
+
+    for url in url_list:
+        text = _extract_text_from(url)
+        chunks = chunking(text)
+        embeddings = make_embeddings(client, chunks)
         
-#         meta_chunks = meta_chunks + chunks
-#         meta_embedding = meta_embedding + embeddings
+        meta_chunks = meta_chunks + chunks
+        meta_embedding = meta_embedding + embeddings
         
-#     for idx in range(len(meta_chunks)):
-#         meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
-#                                 "embedding": meta_embedding[idx]}
-#     return meta_embeddings
+    for idx in range(len(meta_chunks)):
+        meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
+                                "embedding": meta_embedding[idx]}
+    return meta_embeddings
 
         
 def make_meta_embeddings_pdf(client):
@@ -125,13 +123,12 @@ def make_meta_embeddings_pdf(client):
             file = os.path.join(data_path, file)
             
             text = extract_text_from_pdf(file)
-            print(text[:1000])
             chunks = chunking(text)
             embeddings = make_embeddings(client, chunks)
             
             meta_chunks = meta_chunks + chunks
             meta_embedding = meta_embedding + embeddings
-
+        
     for idx in range(len(meta_chunks)):
         meta_embeddings[str(idx)] = {"text": meta_chunks[idx], 
                                 "embedding": meta_embedding[idx]}
@@ -146,9 +143,12 @@ def search_similar_text(index, query_embedding, top_k=5):
         include_values=True,
         include_metadata=True
         )
+    # print("\n\nresult is:\n\n",result)
     # get the top 5 similar texts
     for idx in range(top_k):
-        context = context + result['matches'][idx]['metadata']['text']
+        print(result['matches'][idx]['score'])
+        if(result['matches'][idx]['score'] > 0.4):
+            context = context + result['matches'][idx]['metadata']['text']
         
     return context
 
@@ -162,14 +162,14 @@ def main():
     
     index = create_database()
     
-    meta_embeddings_pdf = make_meta_embeddings_pdf(client)
-    # meta_embeddings_html = make_meta_embeddings_html(client)
+    # meta_embeddings_pdf = make_meta_embeddings_pdf(client)
+    meta_embeddings_html = make_meta_embeddings_html(client)
     
     # print(len(meta_embeddings_html))
     # print(len(meta_embeddings_pdf))
     
-    upload_to_database(index, meta_embeddings_pdf)
-    # upload_to_database(index, meta_embeddings_html)
+    # upload_to_database(index, meta_embeddings_pdf)
+    upload_to_database(index, meta_embeddings_html)
     
     # query = "what course should i choose in the first semester of the AI meng program at Duke?"
     

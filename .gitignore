@@ -1,0 +1,13 @@
+data/animelist.csv
+data/anime_with_synopsis.csv
+data/anime.csv
+/venv
+__MACOSX
+*/__MACOSX
+.DS_Store
+.env
+./.env
+*/__pycache__
+/workspaces/AIBot/src/rag/__pycache__
+/*/*/__pycache__
+.DS_Store
